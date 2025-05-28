@@ -1,0 +1,1135 @@
+<!DOCTYPE html>
+<html lang="es">
+<head
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Control de Jornada</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 15px rgba(0,0,0,0.1);
+        }
+        .app-container {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+        }
+        .clock-btn {
+            height: 100px;
+            font-size: 1.5rem;
+            margin: 10px 0;
+        }
+        .header-logo {
+            max-height: 60px;
+        }
+        .clock-time {
+            font-size: 3rem;
+            font-weight: bold;
+        }
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.05);
+        }
+        .chart-container {
+            position: relative;
+            height: 300px;
+            margin-top: 20px;
+        }
+        @media (max-width: 768px) {
+            .clock-time {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Login Screen -->
+    <div id="login-screen" class="login-container">
+        <div class="text-center mb-4">
+            <h2>Control de Jornada</h2>
+            <p>Inicie sesión para continuar</p>
+        </div>
+        <div class="mb-3">
+            <label for="email" class="form-label">Email</label>
+            <input type="email" class="form-control" id="email" placeholder="nombre@empresa.com">
+        </div>
+        <div class="mb-3">
+            <label for="password" class="form-label">Contraseña</label>
+            <input type="password" class="form-control" id="password">
+        </div>
+        <button id="login-btn" class="btn btn-primary w-100">Iniciar Sesión</button>
+        <div class="mt-3 text-center">
+            <a href="#" id="switch-to-admin">Acceder como Administrador</a>
+        </div>
+    </div>
+
+    <!-- Employee Dashboard -->
+    <div id="employee-dashboard" class="app-container d-none">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    Control de Jornada
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarNav">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="user-dropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-circle"></i> <span id="user-name">Usuario</span>
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" id="logout-btn">Cerrar sesión</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <div class="row">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h3 class="mb-4">Registro de Jornada</h3>
+                        <div class="clock-time mb-3" id="current-time">00:00:00</div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <button id="clock-in-morning" class="btn btn-success clock-btn w-100">
+                                    <i class="fas fa-sign-in-alt me-2"></i> Entrada Mañana
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button id="clock-out-morning" class="btn btn-danger clock-btn w-100">
+                                    <i class="fas fa-sign-out-alt me-2"></i> Salida Mañana
+                                </button>
+                            </div>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <button id="clock-in-afternoon" class="btn btn-success clock-btn w-100">
+                                    <i class="fas fa-sign-in-alt me-2"></i> Entrada Tarde
+                                </button>
+                            </div>
+                            <div class="col-md-6">
+                                <button id="clock-out-afternoon" class="btn btn-danger clock-btn w-100">
+                                    <i class="fas fa-sign-out-alt me-2"></i> Salida Tarde
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h3 class="mb-3">Estado Actual</h3>
+                        <div class="table-responsive">
+                            <table class="table">
+                                <thead>
+                                    <tr>
+                                        <th>Evento</th>
+                                        <th>Hora</th>
+                                        <th>Estado</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="today-records">
+                                    <tr>
+                                        <td>Entrada Mañana</td>
+                                        <td id="morning-in">-</td>
+                                        <td id="morning-in-status">Pendiente</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Salida Mañana</td>
+                                        <td id="morning-out">-</td>
+                                        <td id="morning-out-status">Pendiente</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Entrada Tarde</td>
+                                        <td id="afternoon-in">-</td>
+                                        <td id="afternoon-in-status">Pendiente</td>
+                                    </tr>
+                                    <tr>
+                                        <td>Salida Tarde</td>
+                                        <td id="afternoon-out">-</td>
+                                        <td id="afternoon-out-status">Pendiente</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <label class="form-label">Justificación (si es necesario):</label>
+                            <textarea id="justification" class="form-control" rows="3" placeholder="Explique aquí si ha habido alguna incidencia..."></textarea>
+                        </div>
+                        <div class="mt-3">
+                            <label class="form-label">Nota adicional:</label>
+                            <textarea id="additional-note" class="form-control" rows="2" placeholder="Notas adicionales..."></textarea>
+                        </div>
+                        <div class="text-end mt-3">
+                            <button id="save-notes" class="btn btn-primary">Guardar Notas</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Resumen del Mes</h3>
+                        <div class="chart-container">
+                            <canvas id="hoursChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Admin Dashboard -->
+    <div id="admin-dashboard" class="app-container d-none">
+        <nav class="navbar navbar-expand-lg navbar-light bg-light mb-4">
+            <div class="container-fluid">
+                <a class="navbar-brand" href="#">
+                    Panel de Administración
+                </a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#adminNavbar">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="adminNavbar">
+                    <ul class="navbar-nav ms-auto">
+                        <li class="nav-item dropdown">
+                            <a class="nav-link dropdown-toggle" href="#" id="admin-dropdown" role="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-user-shield"></i> Administrador
+                            </a>
+                            <ul class="dropdown-menu dropdown-menu-end">
+                                <li><a class="dropdown-item" href="#" id="admin-logout">Cerrar sesión</a></li>
+                            </ul>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+
+        <ul class="nav nav-tabs mb-4" id="adminTabs">
+            <li class="nav-item">
+                <a class="nav-link active" data-bs-toggle="tab" href="#employees-tab">Empleados</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#reports-tab">Informes</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" data-bs-toggle="tab" href="#settings-tab">Configuración</a>
+            </li>
+        </ul>
+
+        <div class="tab-content">
+            <div class="tab-pane fade show active" id="employees-tab">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h3>Empleados</h3>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#addEmployeeModal">
+                                <i class="fas fa-plus"></i> Añadir Empleado
+                            </button>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Nombre</th>
+                                        <th>Email</th>
+                                        <th>Estado Hoy</th>
+                                        <th>Última Actividad</th>
+                                        <th>Acciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="employees-list">
+                                    <!-- Sample data, will be populated dynamically -->
+                                    <tr>
+                                        <td>Ana García</td>
+                                        <td>ana@empresa.com</td>
+                                        <td><span class="badge bg-success">Completo</span></td>
+                                        <td>Hoy 17:30</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info view-employee"><i class="fas fa-eye"></i></button>
+                                            <button class="btn btn-sm btn-primary edit-employee"><i class="fas fa-edit"></i></button>
+                                            <button class="btn btn-sm btn-danger delete-employee"><i class="fas fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td>Carlos López</td>
+                                        <td>carlos@empresa.com</td>
+                                        <td><span class="badge bg-warning">Incompleto</span></td>
+                                        <td>Hoy 13:45</td>
+                                        <td>
+                                            <button class="btn btn-sm btn-info view-employee"><i class="fas fa-eye"></i></button>
+                                            <button class="btn btn-sm btn-primary edit-employee"><i class="fas fa-edit"></i></button>
+                                            <button class="btn btn-sm btn-danger delete-employee"><i class="fas fa-trash"></i></button>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="tab-pane fade" id="reports-tab">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Informes Mensuales</h3>
+                        
+                        <div class="row mb-4">
+                            <div class="col-md-6">
+                                <label class="form-label">Seleccionar Mes:</label>
+                                <select class="form-select" id="report-month">
+                                    <option value="1">Enero</option>
+                                    <option value="2">Febrero</option>
+                                    <option value="3">Marzo</option>
+                                    <option value="4">Abril</option>
+                                    <option value="5">Mayo</option>
+                                    <option value="6">Junio</option>
+                                    <option value="7">Julio</option>
+                                    <option value="8">Agosto</option>
+                                    <option value="9">Septiembre</option>
+                                    <option value="10">Octubre</option>
+                                    <option value="11">Noviembre</option>
+                                    <option value="12">Diciembre</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Seleccionar Año:</label>
+                                <select class="form-select" id="report-year">
+                                    <option value="2023">2023</option>
+                                    <option value="2024">2024</option>
+                                    <option value="2025" selected>2025</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Seleccionar Empleado:</label>
+                                <select class="form-select" id="report-employee">
+                                    <option value="all">Todos los empleados</option>
+                                    <option value="1">Ana García</option>
+                                    <option value="2">Carlos López</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 d-flex align-items-end">
+                                <button id="generate-report" class="btn btn-primary">
+                                    <i class="fas fa-file-alt me-2"></i> Generar Informe
+                                </button>
+                                <button id="export-excel" class="btn btn-success ms-2">
+                                    <i class="fas fa-file-excel me-2"></i> Exportar a Excel
+                                </button>
+                                <button id="send-email" class="btn btn-info ms-2">
+                                    <i class="fas fa-envelope me-2"></i> Enviar por Email
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="chart-container mb-4">
+                            <canvas id="monthlyReportChart"></canvas>
+                        </div>
+                        
+                        <div class="table-responsive">
+                            <table class="table table-striped" id="monthly-report-table">
+                                <thead>
+                                    <tr>
+                                        <th>Fecha</th>
+                                        <th>Empleado</th>
+                                        <th>Entrada Mañana</th>
+                                        <th>Salida Mañana</th>
+                                        <th>Entrada Tarde</th>
+                                        <th>Salida Tarde</th>
+                                        <th>Horas Trabajadas</th>
+                                        <th>Observaciones</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="monthly-report-data">
+                                    <!-- Sample data, will be populated dynamically -->
+                                    <tr>
+                                        <td>26/05/2025</td>
+                                        <td>Ana García</td>
+                                        <td>09:00</td>
+                                        <td>13:30</td>
+                                        <td>15:00</td>
+                                        <td>17:30</td>
+                                        <td>7.0 h</td>
+                                        <td>-</td>
+                                    </tr>
+                                    <tr>
+                                        <td>26/05/2025</td>
+                                        <td>Carlos López</td>
+                                        <td>08:45</td>
+                                        <td>13:45</td>
+                                        <td>15:30</td>
+                                        <td>-</td>
+                                        <td>5.0 h</td>
+                                        <td>Salida anticipada por cita médica</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="tab-pane fade" id="settings-tab">
+                <div class="card">
+                    <div class="card-body">
+                        <h3>Configuración de la Empresa</h3>
+                        
+                        <form id="company-settings-form">
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Nombre de la Empresa:</label>
+                                    <input type="text" class="form-control" id="company-name" value="Mi Empresa S.L.">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">CIF:</label>
+                                    <input type="text" class="form-control" id="company-tax-id" value="B12345678">
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-3">
+                                <div class="col-md-6">
+                                    <label class="form-label">Dirección:</label>
+                                    <input type="text" class="form-control" id="company-address" value="Calle Principal 123, 28001 Madrid">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Email de Contacto:</label>
+                                    <input type="email" class="form-control" id="company-email" value="info@miempresa.com">
+                                </div>
+                            </div>
+                            
+                            <div class="row mb-4">
+                                <div class="col-md-6">
+                                    <label class="form-label">Logo de la Empresa:</label>
+                                    <input type="file" class="form-control" id="company-logo">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label">Horario Laboral Estándar:</label>
+                                    <div class="row">
+                                        <div class="col-6">
+                                            <select class="form-select" id="work-start-time">
+                                                <option value="09:00">09:00</option>
+                                                <option value="08:30">08:30</option>
+                                                <option value="08:00">08:00</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-6">
+                                            <select class="form-select" id="work-end-time">
+                                                <option value="17:00">17:00</option>
+                                                <option value="17:30">17:30</option>
+                                                <option value="18:00">18:00</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <h4 class="mb-3">Configuración de Notificaciones</h4>
+                            
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="notify-missing-clockout" checked>
+                                    <label class="form-check-label" for="notify-missing-clockout">
+                                        Notificar al administrador por falta de registro de salida
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <div class="form-check form-switch">
+                                    <input class="form-check-input" type="checkbox" id="notify-late-arrival" checked>
+                                    <label class="form-check-label" for="notify-late-arrival">
+                                        Notificar llegadas tardías
+                                    </label>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="form-label">Email para recibir notificaciones:</label>
+                                <input type="email" class="form-control" id="notification-email" value="admin@miempresa.com">
+                            </div>
+                            
+                            <div class="text-end mt-4">
+                                <button type="submit" id="save-settings" class="btn btn-primary">
+                                    <i class="fas fa-save me-2"></i> Guardar Configuración
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Add Employee Modal -->
+    <div class="modal fade" id="addEmployeeModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Añadir Nuevo Empleado</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="add-employee-form">
+                        <div class="mb-3">
+                            <label class="form-label">Nombre Completo:</label>
+                            <input type="text" class="form-control" id="new-employee-name" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email:</label>
+                            <input type="email" class="form-control" id="new-employee-email" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Contraseña:</label>
+                            <input type="password" class="form-control" id="new-employee-password" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Departamento:</label>
+                            <input type="text" class="form-control" id="new-employee-department">
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Posición:</label>
+                            <input type="text" class="form-control" id="new-employee-position">
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="save-new-employee">Guardar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Email Report Modal -->
+    <div class="modal fade" id="emailReportModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Enviar Informe por Email</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="email-report-form">
+                        <div class="mb-3">
+                            <label class="form-label">Destinatario:</label>
+                            <input type="email" class="form-control" id="report-recipient" placeholder="email@ejemplo.com" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Asunto:</label>
+                            <input type="text" class="form-control" id="report-subject" value="Informe Mensual de Jornada - Mayo 2025" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Mensaje:</label>
+                            <textarea class="form-control" id="report-message" rows="4">Adjunto el informe mensual de jornada laboral correspondiente a Mayo de 2025.
+
+Saludos cordiales,
+Administración</textarea>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="attach-excel" checked>
+                                <label class="form-check-label" for="attach-excel">
+                                    Adjuntar archivo Excel
+                                </label>
+                            </div>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="attach-pdf" checked>
+                                <label class="form-check-label" for="attach-pdf">
+                                    Adjuntar archivo PDF
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" id="send-report-email">Enviar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Sample users for demo
+        const users = [
+            { id: 1, name: "Ana García", email: "ana@empresa.com", password: "password", role: "employee" },
+            { id: 2, name: "Carlos López", email: "carlos@empresa.com", password: "password", role: "employee" },
+            { id: 3, name: "Admin", email: "admin@empresa.com", password: "admin", role: "admin" }
+        ];
+        
+        let currentUser = null;
+        let todayRecords = {};
+        
+        // Initialize attendance records in localStorage if not exist
+        if (!localStorage.getItem('attendanceRecords')) {
+            localStorage.setItem('attendanceRecords', JSON.stringify({}));
+        }
+        
+        // Clock display update
+        function updateClock() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString('es-ES');
+            document.getElementById('current-time').textContent = timeString;
+        }
+        
+        // Update clock every second
+        setInterval(updateClock, 1000);
+        updateClock();
+        
+        // Login functionality
+        document.getElementById('login-btn').addEventListener('click', function() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            const user = users.find(u => u.email === email && u.password === password);
+            
+            if (user) {
+                currentUser = user;
+                
+                if (user.role === 'employee') {
+                    document.getElementById('login-screen').classList.add('d-none');
+                    document.getElementById('employee-dashboard').classList.remove('d-none');
+                    document.getElementById('user-name').textContent = user.name;
+                    
+                    // Load today's records
+                    loadTodayRecords();
+                    // Initialize employee chart
+                    initEmployeeChart();
+                } else if (user.role === 'admin') {
+                    document.getElementById('login-screen').classList.add('d-none');
+                    document.getElementById('admin-dashboard').classList.remove('d-none');
+                    
+                    // Initialize admin charts
+                    initAdminCharts();
+                }
+            } else {
+                alert('Credenciales incorrectas. Por favor, intente de nuevo.');
+            }
+        });
+        
+        // Switch to admin login
+        document.getElementById('switch-to-admin').addEventListener('click', function(e) {
+            e.preventDefault();
+            document.getElementById('email').value = 'admin@empresa.com';
+            document.getElementById('password').value = 'admin';
+        });
+        
+        // Logout functionality
+        document.getElementById('logout-btn').addEventListener('click', function() {
+            currentUser = null;
+            document.getElementById('employee-dashboard').classList.add('d-none');
+            document.getElementById('login-screen').classList.remove('d-none');
+            clearForm();
+        });
+        
+        document.getElementById('admin-logout').addEventListener('click', function() {
+            currentUser = null;
+            document.getElementById('admin-dashboard').classList.add('d-none');
+            document.getElementById('login-screen').classList.remove('d-none');
+            clearForm();
+        });
+        
+        function clearForm() {
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+        }
+        
+        // Clock in/out functionality
+        document.getElementById('clock-in-morning').addEventListener('click', registerClockInMorning);
+        document.getElementById('clock-out-morning').addEventListener('click', registerClockOutMorning);
+        document.getElementById('clock-in-afternoon').addEventListener('click', registerClockInAfternoon);
+        document.getElementById('clock-out-afternoon').addEventListener('click', registerClockOutAfternoon);
+        
+        function registerClockInMor
+function registerClockInMorning() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    
+    if (!todayRecords.morningIn) {
+        todayRecords.morningIn = timeString;
+        document.getElementById('morning-in').textContent = timeString;
+        document.getElementById('morning-in-status').textContent = 'Registrado';
+        document.getElementById('morning-in-status').classList.add('text-success');
+        
+        // Save to localStorage
+        saveAttendanceRecord();
+        
+        // Disable the button after clocking in
+        document.getElementById('clock-in-morning').disabled = true;
+    }
+}
+
+function registerClockOutMorning() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    
+    if (!todayRecords.morningOut && todayRecords.morningIn) {
+        todayRecords.morningOut = timeString;
+        document.getElementById('morning-out').textContent = timeString;
+        document.getElementById('morning-out-status').textContent = 'Registrado';
+        document.getElementById('morning-out-status').classList.add('text-success');
+        
+        // Save to localStorage
+        saveAttendanceRecord();
+        
+        // Disable the button after clocking out
+        document.getElementById('clock-out-morning').disabled = true;
+    } else if (!todayRecords.morningIn) {
+        alert('Primero debe registrar la entrada de la mañana.');
+    }
+}
+
+function registerClockInAfternoon() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    
+    if (!todayRecords.afternoonIn) {
+        todayRecords.afternoonIn = timeString;
+        document.getElementById('afternoon-in').textContent = timeString;
+        document.getElementById('afternoon-in-status').textContent = 'Registrado';
+        document.getElementById('afternoon-in-status').classList.add('text-success');
+        
+        // Save to localStorage
+        saveAttendanceRecord();
+        
+        // Disable the button after clocking in
+        document.getElementById('clock-in-afternoon').disabled = true;
+    }
+}
+
+function registerClockOutAfternoon() {
+    const now = new Date();
+    const timeString = now.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+    
+    if (!todayRecords.afternoonOut && todayRecords.afternoonIn) {
+        todayRecords.afternoonOut = timeString;
+        document.getElementById('afternoon-out').textContent = timeString;
+        document.getElementById('afternoon-out-status').textContent = 'Registrado';
+        document.getElementById('afternoon-out-status').classList.add('text-success');
+        
+        // Save to localStorage
+        saveAttendanceRecord();
+        
+        // Disable the button after clocking out
+        document.getElementById('clock-out-afternoon').disabled = true;
+    } else if (!todayRecords.afternoonIn) {
+        alert('Primero debe registrar la entrada de la tarde.');
+    }
+}
+
+function saveAttendanceRecord() {
+    if (!currentUser) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const records = JSON.parse(localStorage.getItem('attendanceRecords')) || {};
+    
+    if (!records[currentUser.id]) {
+        records[currentUser.id] = {};
+    }
+    
+    // Store today's records with justification and notes
+    records[currentUser.id][today] = {
+        ...todayRecords,
+        justification: document.getElementById('justification').value,
+        notes: document.getElementById('additional-note').value
+    };
+    
+    localStorage.setItem('attendanceRecords', JSON.stringify(records));
+}
+
+// Save notes button functionality
+document.getElementById('save-notes').addEventListener('click', function() {
+    saveAttendanceRecord();
+    alert('Notas guardadas correctamente');
+});
+
+function loadTodayRecords() {
+    if (!currentUser) return;
+    
+    const today = new Date().toISOString().split('T')[0];
+    const records = JSON.parse(localStorage.getItem('attendanceRecords')) || {};
+    
+    if (records[currentUser.id] && records[currentUser.id][today]) {
+        todayRecords = records[currentUser.id][today];
+        
+        // Update UI with loaded records
+        if (todayRecords.morningIn) {
+            document.getElementById('morning-in').textContent = todayRecords.morningIn;
+            document.getElementById('morning-in-status').textContent = 'Registrado';
+            document.getElementById('morning-in-status').classList.add('text-success');
+            document.getElementById('clock-in-morning').disabled = true;
+        }
+        
+        if (todayRecords.morningOut) {
+            document.getElementById('morning-out').textContent = todayRecords.morningOut;
+            document.getElementById('morning-out-status').textContent = 'Registrado';
+            document.getElementById('morning-out-status').classList.add('text-success');
+            document.getElementById('clock-out-morning').disabled = true;
+        }
+        
+        if (todayRecords.afternoonIn) {
+            document.getElementById('afternoon-in').textContent = todayRecords.afternoonIn;
+            document.getElementById('afternoon-in-status').textContent = 'Registrado';
+            document.getElementById('afternoon-in-status').classList.add('text-success');
+            document.getElementById('clock-in-afternoon').disabled = true;
+        }
+        
+        if (todayRecords.afternoonOut) {
+            document.getElementById('afternoon-out').textContent = todayRecords.afternoonOut;
+            document.getElementById('afternoon-out-status').textContent = 'Registrado';
+            document.getElementById('afternoon-out-status').classList.add('text-success');
+            document.getElementById('clock-out-afternoon').disabled = true;
+        }
+        
+        // Load notes and justification
+        if (todayRecords.justification) {
+            document.getElementById('justification').value = todayRecords.justification;
+        }
+        
+        if (todayRecords.notes) {
+            document.getElementById('additional-note').value = todayRecords.notes;
+        }
+    } else {
+        todayRecords = {};
+    }
+}
+
+// Initialize employee chart
+function initEmployeeChart() {
+    // Sample data for the chart
+    const currentMonth = new Date().getMonth();
+    const daysInMonth = new Date(new Date().getFullYear(), currentMonth + 1, 0).getDate();
+    
+    // Create arrays for the chart data
+    const days = Array.from({length: daysInMonth}, (_, i) => i + 1);
+    const hoursWorked = Array.from({length: daysInMonth}, () => Math.floor(Math.random() * 4) + 5); // Random values between 5-9 hours
+    
+    // Get the canvas element
+    const ctx = document.getElementById('hoursChart').getContext('2d');
+    
+    // Create the chart
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: days,
+            datasets: [{
+                label: 'Horas trabajadas',
+                data: hoursWorked,
+                backgroundColor: 'rgba(54, 162, 235, 0.5)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 10,
+                    title: {
+                        display: true,
+                        text: 'Horas'
+                    }
+                },
+                x: {
+                    title: {
+                        display: true,
+                        text: 'Día del mes'
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Horas Trabajadas este Mes'
+                }
+            }
+        }
+    });
+}
+
+// Initialize admin charts
+function initAdminCharts() {
+    // Sample data for monthly report chart
+    const employees = ['Ana García', 'Carlos López', 'María Rodríguez', 'Juan Pérez'];
+    const workHours = [160, 152, 168, 144]; // Example total hours per employee
+    
+    const ctx = document.getElementById('monthlyReportChart').getContext('2d');
+    
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: employees,
+            datasets: [{
+                label: 'Horas Totales Trabajadas',
+                data: workHours,
+                backgroundColor: 'rgba(75, 192, 192, 0.5)',
+                borderColor: 'rgba(75, 192, 192, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Horas'
+                    }
+                }
+            },
+            plugins: {
+                title: {
+                    display: true,
+                    text: 'Resumen de Horas Trabajadas por Empleado'
+                }
+            }
+        }
+    });
+    
+    // Load employee list for admin
+    loadEmployeesList();
+}
+
+// Load employees list in admin dashboard
+function loadEmployeesList() {
+    // This would typically fetch from a database, but we'll use our mock data
+    const employeesList = document.getElementById('employees-list');
+    employeesList.innerHTML = '';
+    
+    users.forEach(user => {
+        if (user.role === 'employee') {
+            const row = document.createElement('tr');
+            
+            // Generate random status for demo
+            const statusComplete = Math.random() > 0.3; 
+            const lastActivity = 'Hoy ' + (Math.floor(Math.random() * 12) + 8) + ':' + 
+                                (Math.floor(Math.random() * 6) * 10).toString().padStart(2, '0');
+            
+            row.innerHTML = `
+                <td>${user.name}</td>
+                <td>${user.email}</td>
+                <td><span class="badge <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi>s</mi><mi>t</mi><mi>a</mi><mi>t</mi><mi>u</mi><mi>s</mi><mi>C</mi><mi>o</mi><mi>m</mi><mi>p</mi><mi>l</mi><mi>e</mi><mi>t</mi><mi>e</mi><msup><mo stretchy="false">?</mo><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mi>b</mi><mi>g</mi><mo>−</mo><mi>s</mi><mi>u</mi><mi>c</mi><mi>c</mi><mi>e</mi><mi>s</mi><msup><mi>s</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><msup><mo>:</mo><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup><mi>b</mi><mi>g</mi><mo>−</mo><mi>w</mi><mi>a</mi><mi>r</mi><mi>n</mi><mi>i</mi><mi>n</mi><msup><mi>g</mi><mo mathvariant="normal" lspace="0em" rspace="0em">′</mo></msup></mrow><mi mathvariant="normal">&quot;</mi><mo>&gt;</mo></mrow><annotation encoding="application/x-tex">{statusComplete ? &#x27;bg-success&#x27; : &#x27;bg-warning&#x27;}&quot;&gt;</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.9463em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">s</span><span class="mord mathnormal">t</span><span class="mord mathnormal">a</span><span class="mord mathnormal">t</span><span class="mord mathnormal">u</span><span class="mord mathnormal">s</span><span class="mord mathnormal" style="margin-right:0.07153em;">C</span><span class="mord mathnormal">o</span><span class="mord mathnormal">m</span><span class="mord mathnormal" style="margin-right:0.01968em;">pl</span><span class="mord mathnormal">e</span><span class="mord mathnormal">t</span><span class="mord mathnormal">e</span><span class="mclose"><span class="mclose">?</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7519em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal">s</span><span class="mord mathnormal">u</span><span class="mord mathnormal">cces</span><span class="mord"><span class="mord mathnormal">s</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7519em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel"><span class="mrel">:</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7519em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mord mathnormal">b</span><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mbin">−</span><span class="mspace" style="margin-right:0.2222em;"></span><span class="mord mathnormal" style="margin-right:0.02691em;">w</span><span class="mord mathnormal">a</span><span class="mord mathnormal" style="margin-right:0.02778em;">r</span><span class="mord mathnormal">nin</span><span class="mord"><span class="mord mathnormal" style="margin-right:0.03588em;">g</span><span class="msupsub"><span class="vlist-t"><span class="vlist-r"><span class="vlist" style="height:0.7519em;"><span style="top:-3.063em;margin-right:0.05em;"><span class="pstrut" style="height:2.7em;"></span><span class="sizing reset-size6 size3 mtight"><span class="mord mtight"><span class="mord mtight">′</span></span></span></span></span></span></span></span></span></span><span class="mord">&quot;</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">&gt;</span></span></span></span>{statusComplete ? 'Completo' : 'Incompleto'}</span>
+                </td>
+                <td>${lastActivity}</td>
+                <td>
+                    <button class="btn btn-sm btn-info view-employee" data-id="${user.id}"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-sm btn-primary edit-employee" data-id="${user.id}"><i class="fas fa-edit"></i></button>
+                    <button class="btn btn-sm btn-danger delete-employee" data-id="${user.id}"><i class="fas fa-trash"></i></button>
+                </td>
+            `;
+            
+            employeesList.appendChild(row);
+        }
+    });
+    
+    // Add event listeners to the buttons
+    document.querySelectorAll('.view-employee').forEach(btn => {
+        btn.addEventListener('click', viewEmployee);
+    });
+    
+    document.querySelectorAll('.edit-employee').forEach(btn => {
+        btn.addEventListener('click', editEmployee);
+    });
+    
+    document.querySelectorAll('.delete-employee').forEach(btn => {
+        btn.addEventListener('click', deleteEmployee);
+    });
+}
+
+// Button actions for employee management
+function viewEmployee(e) {
+    const employeeId = e.currentTarget.getAttribute('data-id');
+    alert(`Ver detalles del empleado ID: ${employeeId}`);
+    // In a real app, this would open a detailed view or modal with employee information
+}
+
+function editEmployee(e) {
+    const employeeId = e.currentTarget.getAttribute('data-id');
+    alert(`Editar empleado ID: ${employeeId}`);
+    // In a real app, this would populate a form with employee data for editing
+}
+
+function deleteEmployee(e) {
+    const employeeId = e.currentTarget.getAttribute('data-id');
+    if (confirm(`¿Está seguro que desea eliminar este empleado?`)) {
+        alert(`Empleado ID: ${employeeId} eliminado`);
+        // In a real app, this would delete the employee from database and refresh the list
+    }
+}
+
+// Add new employee functionality
+document.getElementById('save-new-employee').addEventListener('click', function() {
+    const name = document.getElementById('new-employee-name').value;
+    const email = document.getElementById('new-employee-email').value;
+    const password = document.getElementById('new-employee-password').value;
+    const department = document.getElementById('new-employee-department').value;
+    const position = document.getElementById('new-employee-position').value;
+    
+    if (name && email && password) {
+        // In a real app, this would save to a database
+        const newEmployee = {
+            id: users.length + 1,
+            name,
+            email,
+            password,
+            role: 'employee',
+            department,
+            position
+        };
+        
+        users.push(newEmployee);
+        
+        // Close modal and refresh list
+        const modal = bootstrap.Modal.getInstance(document.getElementById('addEmployeeModal'));
+        modal.hide();
+        
+        // Clear form
+        document.getElementById('add-employee-form').reset();
+        
+        // Refresh employee list
+        loadEmployeesList();
+        
+        alert('Empleado añadido correctamente');
+    } else {
+        alert('Por favor complete todos los campos obligatorios');
+    }
+});
+
+// Generate report functionality
+document.getElementById('generate-report').addEventListener('click', function() {
+    const month = document.getElementById('report-month').value;
+    const year = document.getElementById('report-year').value;
+    const employee = document.getElementById('report-employee').value;
+    
+    alert(`Generando informe para <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi>m</mi><mi>o</mi><mi>n</mi><mi>t</mi><mi>h</mi></mrow><mi mathvariant="normal">/</mi></mrow><annotation encoding="application/x-tex">{month}/</annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:1em;vertical-align:-0.25em;"></span><span class="mord"><span class="mord mathnormal">m</span><span class="mord mathnormal">o</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">h</span></span><span class="mord">/</span></span></span></span>{year}, empleado: ${employee}`);
+    // In a real app, this would fetch data and populate the table
+});
+
+// Export to Excel functionality
+document.getElementById('export-excel').addEventListener('click', function() {
+    alert('Exportando a Excel...');
+    // In a real app, this would generate and download an Excel file
+});
+
+// Send email functionality
+document.getElementById('send-email').addEventListener('click', function() {
+    // Show email modal
+    const emailModal = new bootstrap.Modal(document.getElementById('emailReportModal'));
+    emailModal.show();
+});
+
+// Send report email
+document.getElementById('send-report-email').addEventListener('click', function() {
+    const recipient = document.getElementById('report-recipient').value;
+    const subject = document.getElementById('report-subject').value;
+    const message = document.getElementById('report-message').value;
+    const attachExcel = document.getElementById('attach-excel').checked;
+    const attachPdf = document.getElementById('attach-pdf').checked;
+    
+    if (recipient && subject) {
+        alert(`Email enviado a <span class="katex"><span class="katex-mathml"><math xmlns="http://www.w3.org/1998/Math/MathML"><semantics><mrow><mrow><mi>r</mi><mi>e</mi><mi>c</mi><mi>i</mi><mi>p</mi><mi>i</mi><mi>e</mi><mi>n</mi><mi>t</mi></mrow><mi>c</mi><mi>o</mi><mi>n</mi><mi>a</mi><mi>s</mi><mi>u</mi><mi>n</mi><mi>t</mi><mi>o</mi><mo>:</mo></mrow><annotation encoding="application/x-tex">{recipient} con asunto: </annotation></semantics></math></span><span class="katex-html" aria-hidden="true"><span class="base"><span class="strut" style="height:0.854em;vertical-align:-0.1944em;"></span><span class="mord"><span class="mord mathnormal">rec</span><span class="mord mathnormal">i</span><span class="mord mathnormal">p</span><span class="mord mathnormal">i</span><span class="mord mathnormal">e</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span></span><span class="mord mathnormal">co</span><span class="mord mathnormal">na</span><span class="mord mathnormal">s</span><span class="mord mathnormal">u</span><span class="mord mathnormal">n</span><span class="mord mathnormal">t</span><span class="mord mathnormal">o</span><span class="mspace" style="margin-right:0.2778em;"></span><span class="mrel">:</span></span></span></span>{subject}`);
+        
+        // Hide modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('emailReportModal'));
+        modal.hide();
+    } else {
+        alert('Por favor complete todos los campos obligatorios');
+    }
+});
+
+// Save company settings
+document.getElementById('company-settings-form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const companyName = document.getElementById('company-name').value;
+    const companyTaxId = document.getElementById('company-tax-id').value;
+    const companyAddress = document.getElementById('company-address').value;
+    const companyEmail = document.getElementById('company-email').value;
+    const workStartTime = document.getElementById('work-start-time').value;
+    const workEndTime = document.getElementById('work-end-time').value;
+    
+    // Save to localStorage
+    const settings = {
+        companyName,
+        companyTaxId,
+        companyAddress,
+        companyEmail,
+        workStartTime,
+        workEndTime,
+        notifyMissingClockout: document.getElementById('notify-missing-clockout').checked,
+        notifyLateArrival: document.getElementById('notify-late-arrival').checked,
+        notificationEmail: document.getElementById('notification-email').value
+    };
+    
+    localStorage.setItem('companySettings', JSON.stringify(settings));
+    alert('Configuración guardada correctamente');
+});
+
+// Load company settings on page load
+function loadCompanySettings() {
+    const settings = JSON.parse(localStorage.getItem('companySettings'));
+    if (settings) {
+        document.getElementById('company-name').value = settings.companyName || 'Mi Empresa S.L.';
+        document.getElementById('company-tax-id').value = settings.companyTaxId || 'B12345678';
+        document.getElementById('company-address').value = settings.companyAddress || 'Calle Principal 123, 28001 Madrid';
+        document.getElementById('company-email').value = settings.companyEmail || 'info@miempresa.com';
+        document.getElementById('work-start-time').value = settings.workStartTime || '09:00';
+        document.getElementById('work-end-time').value = settings.workEndTime || '17:00';
+        document.getElementById('notify-missing-clockout').checked = settings.notifyMissingClockout !== false;
+        document.getElementById('notify-late-arrival').checked = settings.notifyLateArrival !== false;
+        document.getElementById('notification-email').value = settings.notificationEmail || 'admin@miempresa.com';
+    }
+}
+
+// Initialize settings when admin dashboard loads
+document.querySelector('a[href="#settings-tab"]').addEventListener('click', loadCompanySettings);
+
+// Mobile responsiveness for chart containers
+function adjustChartContainers() {
+    const width = window.innerWidth;
+    const chartContainers = document.querySelectorAll('.chart-container');
+    
+    if (width < 768) { // Mobile breakpoint
+        chartContainers.forEach(container => {
+            container.style.height = '200px';
+        });
+    } else {
+        chartContainers.forEach(container => {
+            container.style.height = '300px';
+        });
+    }
+}
+
+// Call once on load and add resize listener
+adjustChartContainers();
+window.addEventListener('resize', adjustChartContainers);
+
+// Enable Bootstrap tooltips
+var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'))
+var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+    return new bootstrap.Tooltip(tooltipTriggerEl)
+});
